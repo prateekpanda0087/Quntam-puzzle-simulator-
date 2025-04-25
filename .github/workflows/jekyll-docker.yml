@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Quantum Qubit Puzzle Loop</title>
+  <style>
+    body {
+      background: #000;
+      color: #0f0;
+      font-family: monospace;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      margin: 0;
+      padding: 0;
+    }
+    h1 {
+      margin-top: 20px;
+    }
+    #maze {
+      width: 600px;
+      height: 600px;
+      display: grid;
+      grid-template-columns: repeat(20, 1fr);
+      grid-template-rows: repeat(20, 1fr);
+      gap: 1px;
+      border: 3px solid #0f0;
+      margin-top: 20px;
+      background: #111;
+    }
+    .cell {
+      width: 100%;
+      height: 100%;
+      background-color: #111;
+      transition: background 0.3s;
+    }
+    .qubit {
+      background-color: #0ff !important;
+    }
+    .correct {
+      background-color: #0f0 !important;
+    }
+    button {
+      background: #111;
+      color: #0f0;
+      border: 1px solid #0f0;
+      padding: 10px 20px;
+      margin-top: 20px;
+      cursor: pointer;
+      font-size: 16px;
+    }
+    #log {
+      max-height: 300px;
+      overflow-y: auto;
+      width: 90%;
+      margin-top: 20px;
+      border-top: 1px solid #0f0;
+      padding-top: 10px;
+    }
+  </style>
+</head>
+<body>
+
+<h1>Quantum Puzzle Loop</h1>
+<button onclick="solve()">Solve with Qubits</button>
+<div id="maze"></div>
+<div id="log"></div>
+
+<script>
+  const gridSize = 20;
+  const totalPaths = 10000000;
+  const correctPath = Math.floor(Math.random() * totalPaths);
+  const maze = document.getElementById("maze");
+  const log = document.getElementById("log");
+
+  let cells = [];
+
+  function createMaze() {
+    maze.innerHTML = '';
+    cells = [];
+    for (let i = 0; i < gridSize * gridSize; i++) {
+      const cell = document.createElement('div');
+      cell.className = 'cell';
+      maze.appendChild(cell);
+      cells.push(cell);
+    }
+  }
+
+  function generateQubits() {
+    const qubits = [];
+    for (let i = 0; i < 10; i++) {
+      const phase = Math.random() * 2 * Math.PI;
+      qubits.push({
+        alpha: Math.cos(phase),
+        beta: Math.sin(phase),
+      });
+    }
+    return qubits;
+  }
+
+  function collapseQubits(qubits) {
+    let binary = '';
+    for (let q of qubits) {
+      const prob1 = Math.abs(q.beta) ** 2;
+      binary += (Math.random() < prob1) ? '1' : '0';
+    }
+    return parseInt(binary, 2) % totalPaths;
+  }
+
+  function visualizePath(pathIndex) {
+    const index = pathIndex % (gridSize * gridSize);
+    cells.forEach((c, i) => {
+      c.classList.remove('qubit');
+      c.classList.remove('correct');
+    });
+    cells[index].classList.add('qubit');
+    return index;
+  }
+
+  function solve() {
+    createMaze();
+    log.innerHTML = '';
+    const qubits = generateQubits();
+    let attempts = 0;
+    let found = false;
+
+    function attemptLoop() {
+      const guess = collapseQubits(qubits);
+      const visual = visualizePath(guess);
+      log.innerHTML += `Attempt ${attempts + 1}: Guess=${guess}, Visual Cell=${visual}<br>`;
+      log.scrollTop = log.scrollHeight;
+
+      if (guess === correctPath) {
+        cells[visual].classList.add('correct');
+        log.innerHTML += `<b>ESCAPE SUCCESSFUL! Path: ${correctPath}</b>`;
+        found = true;
+        return;
+      }
+
+      attempts++;
+      if (attempts < 500 && !found) {
+        setTimeout(attemptLoop, 50); // recursive slow animation
+      } else if (!found) {
+        log.innerHTML += `<b>Qubits failed to escape. Correct was ${correctPath}</b>`;
+      }
+    }
+
+    attemptLoop();
+  }
+
+  // Initialize
+  createMaze();
+</script>
+
+</body>
+</html>
